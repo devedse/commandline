@@ -30,7 +30,6 @@ namespace CommandLine.Core
         private readonly Maybe<int> min;
         private readonly Maybe<int> max;
         private readonly Maybe<object> defaultValue;
-        private readonly Maybe<string> env;
         private readonly string helpText;
         private readonly string metaValue;
         private readonly IEnumerable<string> enumValues;
@@ -39,7 +38,7 @@ namespace CommandLine.Core
         private readonly TargetType targetType;
 
         protected Specification(SpecificationType tag, bool required, Maybe<int> min, Maybe<int> max,
-            Maybe<object> defaultValue, Maybe<string> env, string helpText, string metaValue, IEnumerable<string> enumValues,
+            Maybe<object> defaultValue, string helpText, string metaValue, IEnumerable<string> enumValues,
             Type conversionType, TargetType targetType, bool hidden = false)
         {
             this.tag = tag;
@@ -47,7 +46,6 @@ namespace CommandLine.Core
             this.min = min;
             this.max = max;
             this.defaultValue = defaultValue;
-            this.env = env;
             this.conversionType = conversionType;
             this.targetType = targetType;
             this.helpText = helpText;
@@ -79,11 +77,6 @@ namespace CommandLine.Core
         public Maybe<object> DefaultValue
         {
             get { return defaultValue; }
-        }
-
-        public Maybe<string> Env
-        {
-            get { return env; }
         }
 
 

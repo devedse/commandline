@@ -70,7 +70,7 @@ namespace CommandLine.Core
                 var valueSpecPropsResult =
                     ValueMapper.MapValues(
                         (from pt in specProps where pt.Specification.IsValue() orderby ((ValueSpecification)pt.Specification).Index select pt),
-                        valuesPartition,    
+                        valuesPartition,
                         (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture, ignoreValueCase));
 
                 var missingValueErrors = from token in errorsPartition
@@ -86,9 +86,9 @@ namespace CommandLine.Core
 
                 //build the instance, determining if the type is mutable or not.
                 T instance;
-                if(typeInfo.IsMutable() == true)
+                if (typeInfo.IsMutable() == true)
                 {
-                    instance = BuildMutable(factory, specPropsWithValue, setPropertyErrors, ignoreValueCase, parsingCulture);
+                    instance = BuildMutable(factory, specPropsWithValue, setPropertyErrors);
                 }
                 else
                 {
@@ -126,19 +126,14 @@ namespace CommandLine.Core
             return result;
         }
 
-        private static T BuildMutable<T>(
-            Maybe<Func<T>> factory,
-            IEnumerable<SpecificationProperty> specPropsWithValue,
-            List<Error> setPropertyErrors,
-            bool ignoreValueCase,
-            CultureInfo parsingCulture)
+        private static T BuildMutable<T>(Maybe<Func<T>> factory, IEnumerable<SpecificationProperty> specPropsWithValue, List<Error> setPropertyErrors)
         {
             var mutable = factory.MapValueOrDefault(f => f(), () => Activator.CreateInstance<T>());
 
             setPropertyErrors.AddRange(
                 mutable.SetProperties(
-                    specPropsWithValue, 
-                    sp => sp.Value.IsJust(), 
+                    specPropsWithValue,
+                    sp => sp.Value.IsJust(),
                     sp => sp.Value.FromJustOrFail()
                 )
             );
@@ -146,27 +141,7 @@ namespace CommandLine.Core
             setPropertyErrors.AddRange(
                 mutable.SetProperties(
                     specPropsWithValue,
-                    sp => sp.Value.IsNothing() && sp.Specification.Env.Map(Environment.GetEnvironmentVariable).Map(n => !(n is null)).GetValueOrDefault(false),
-                    sp => sp.Specification.Env
-                        .Map(Environment.GetEnvironmentVariable)
-                        .Bind(v =>
-                        {
-                            var isSequence = sp.Specification.TargetType == TargetType.Sequence;
-                            if (isSequence)
-                            {
-                                throw new Exception($"Sequences not supported for options with \"Env\" as is the case with {sp.Property.Name}");
-                            }
-                            return TypeConverter
-                            .ChangeType(new string[] { v }, sp.Specification.ConversionType, true, parsingCulture, ignoreValueCase);
-                        })
-                        .FromJustOrFail()
-                )
-            );
-
-            setPropertyErrors.AddRange(
-                mutable.SetProperties(
-                    specPropsWithValue,
-                    sp => sp.Value.IsNothing() && sp.Specification.DefaultValue.IsJust() && sp.Specification.Env.Map(Environment.GetEnvironmentVariable).Map(n => n is null).GetValueOrDefault(true),
+                    sp => sp.Value.IsNothing() && sp.Specification.DefaultValue.IsJust(),
                     sp => sp.Specification.DefaultValue.FromJustOrFail()
                 )
             );
@@ -174,8 +149,8 @@ namespace CommandLine.Core
             setPropertyErrors.AddRange(
                 mutable.SetProperties(
                     specPropsWithValue,
-                    sp => sp.Value.IsNothing() 
-                        && sp.Specification.TargetType == TargetType.Sequence 
+                    sp => sp.Value.IsNothing()
+                        && sp.Specification.TargetType == TargetType.Sequence
                         && sp.Specification.DefaultValue.MatchNothing(),
                     sp => sp.Property.PropertyType.GetTypeInfo().GetGenericArguments().Single().CreateEmptyArray()
                 )
@@ -190,7 +165,7 @@ namespace CommandLine.Core
                 specProps.Select(sp => sp.Property.PropertyType).ToArray()
             );
 
-            if(ctor == null)
+            if (ctor == null)
             {
                 throw new InvalidOperationException($"Type {typeInfo.FullName} appears to be immutable, but no constructor found to accept values.");
             }
@@ -208,9 +183,9 @@ namespace CommandLine.Core
                             sp.Specification.DefaultValue.GetValueOrDefault(
                                 sp.Specification.ConversionType.CreateDefaultForImmutable()))).ToArray();
 
-            var immutable = (T)ctor.Invoke(values);
+                var immutable = (T)ctor.Invoke(values);
 
-            return immutable;
+                return immutable;
             }
             catch (Exception)
             {

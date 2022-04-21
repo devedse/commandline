@@ -14,7 +14,7 @@ namespace CommandLine.Core
         public ValueSpecification(int index, string metaName, bool required, Maybe<int> min, Maybe<int> max, Maybe<object> defaultValue, Maybe<string> env,
             string helpText, string metaValue, IEnumerable<string> enumValues,
             Type conversionType, TargetType targetType, bool hidden = false)
-            : base(SpecificationType.Value, required, min, max, defaultValue, env, helpText, metaValue, enumValues, conversionType, targetType, hidden)
+            : base(SpecificationType.Value, required, min, max, defaultValue, helpText, metaValue, enumValues, conversionType, targetType, hidden)
         {
             this.index = index;
             this.metaName = metaName;
