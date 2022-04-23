@@ -224,6 +224,83 @@ namespace CommandLine.Tests.Unit
             ((NotParsed<Simple_Options_With_Required_Env>)result).Errors.Should().BeEquivalentTo(expectedResult);
         }
 
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_From_EnvironmentVariable()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Custom_Converter
+            {
+                StringValue = new TheCustomClass("astring"),
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "astring");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[0]);
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Data.Should().BeEquivalentTo(expectedOptions.StringValue.Data);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_From_Flags()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Custom_Converter
+            {
+                StringValue = new TheCustomClass("astring"),
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[] { "--stringvalue", "astring" });
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Data.Should().BeEquivalentTo(expectedOptions.StringValue.Data);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_AsNull()
+        {
+            // Fixture setup
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[0]);
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Should().BeNull();
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_AsNull_For_Invalid_Value()
+        {
+            // Fixture setup
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[] { "--stringvalue", "invalidvalue" });
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Should().BeNull();
+            // Teardown
+        }
+
         [Fact]
         public void Parse_options_with_double_dash_and_option_sequence()
         {

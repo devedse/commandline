@@ -1,6 +1,8 @@
 ﻿// Copyright 2005-2015 Giacomo Stelluti Scala & Contributors. All rights reserved. See License.md in the project root for license information.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace CommandLine
 {
@@ -17,6 +19,8 @@ namespace CommandLine
         private string metaValue;
         private Type resourceType;
 
+        private Type customConverter;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandLine.BaseAttribute"/> class.
         /// </summary>
@@ -27,6 +31,7 @@ namespace CommandLine
             helpText = new Infrastructure.LocalizableAttributeProperty(nameof(HelpText));
             metaValue = string.Empty;
             resourceType = null;
+            customConverter = null;
         }
 
         /// <summary>
@@ -97,6 +102,22 @@ namespace CommandLine
             set
             {
                 env = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets custom converter value.
+        /// </summary>
+        public Type CustomConverter
+        {
+            get { return customConverter; }
+            set
+            {
+                if (!typeof(ICustomConverter).IsAssignableFrom(value))
+                {
+                    throw new ArgumentException("CustomConverter needs to implement ICustomConverter");
+                }
+                customConverter = value;
             }
         }
 

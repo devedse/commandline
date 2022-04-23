@@ -27,7 +27,7 @@
 		<LangVersion>8.0</LangVersion>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<Version>2.8.1</Version>
+		<Version>2.8.2</Version>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(BuildTarget)' != 'fsharp'">

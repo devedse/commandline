@@ -15,7 +15,7 @@ namespace CommandLine.Core
             MapValues(
                 IEnumerable<SpecificationProperty> propertyTuples,
                 IEnumerable<KeyValuePair<string, IEnumerable<string>>> options,
-                Func<IEnumerable<string>, Type, bool, Maybe<object>> converter,
+                Func<IEnumerable<string>, Type, bool, Maybe<object>> defaultConverter,
                 StringComparer comparer)
         {
             var sequencesAndErrors = propertyTuples
@@ -26,6 +26,15 @@ namespace CommandLine.Core
                             s.Key.MatchName(((OptionSpecification)pt.Specification).ShortName, ((OptionSpecification)pt.Specification).LongName, comparer)).ToMaybe();
                         var env = ((OptionSpecification)pt.Specification).Env;
                         string envValue;
+
+                        var converter = defaultConverter;
+
+                        var customConverterType = ((OptionSpecification)pt.Specification).CustomConverter;
+                        if (customConverterType != null)
+                        {
+                            ICustomConverter c = Activator.CreateInstance(customConverterType) as ICustomConverter;
+                            converter = c.Convert;
+                        }
 
                         if (matched.IsJust())
                         {
