@@ -106,7 +106,8 @@ namespace CommandLine
         }
 
         /// <summary>
-        /// Gets or sets custom converter value.
+        /// Gets or sets custom converter value. (Should be a class that implements ICustomConverter)
+        /// This can be used to manually convert the string values passed as arguments to any desired object.
         /// </summary>
         public Type CustomConverter
         {
