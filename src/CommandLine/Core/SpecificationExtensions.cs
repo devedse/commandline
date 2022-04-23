@@ -29,6 +29,8 @@ namespace CommandLine.Core
                 specification.Max,
                 specification.Separator,
                 specification.DefaultValue,
+                specification.Env,
+                specification.CustomConverter,
                 specification.HelpText,
                 specification.MetaValue,
                 specification.EnumValues,

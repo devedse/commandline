@@ -54,7 +54,7 @@ namespace CommandLine.Core
             this.hidden = hidden;
         }
 
-        public SpecificationType Tag 
+        public SpecificationType Tag
         {
             get { return tag; }
         }
@@ -78,6 +78,7 @@ namespace CommandLine.Core
         {
             get { return defaultValue; }
         }
+
 
         public string HelpText
         {
@@ -110,13 +111,13 @@ namespace CommandLine.Core
         }
 
         public static Specification FromProperty(PropertyInfo property)
-        {       
+        {
             var attrs = property.GetCustomAttributes(true);
             var oa = attrs.OfType<OptionAttribute>();
             if (oa.Count() == 1)
             {
                 var spec = OptionSpecification.FromAttribute(oa.Single(), property.PropertyType,
-                    ReflectionHelper.GetNamesOfEnum(property.PropertyType)); 
+                    ReflectionHelper.GetNamesOfEnum(property.PropertyType));
 
                 if (spec.ShortName.Length == 0 && spec.LongName.Length == 0)
                 {

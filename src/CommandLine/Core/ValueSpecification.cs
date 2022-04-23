@@ -11,7 +11,7 @@ namespace CommandLine.Core
         private readonly int index;
         private readonly string metaName;
 
-        public ValueSpecification(int index, string metaName, bool required, Maybe<int> min, Maybe<int> max, Maybe<object> defaultValue,
+        public ValueSpecification(int index, string metaName, bool required, Maybe<int> min, Maybe<int> max, Maybe<object> defaultValue, Maybe<string> env,
             string helpText, string metaValue, IEnumerable<string> enumValues,
             Type conversionType, TargetType targetType, bool hidden = false)
             : base(SpecificationType.Value, required, min, max, defaultValue, helpText, metaValue, enumValues, conversionType, targetType, hidden)
@@ -29,6 +29,7 @@ namespace CommandLine.Core
                 attribute.Min == -1 ? Maybe.Nothing<int>() : Maybe.Just(attribute.Min),
                 attribute.Max == -1 ? Maybe.Nothing<int>() : Maybe.Just(attribute.Max),
                 attribute.Default.ToMaybe(),
+                attribute.Env.ToMaybe(),
                 attribute.HelpText,
                 attribute.MetaValue,
                 enumValues,

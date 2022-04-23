@@ -1,6 +1,8 @@
 ﻿// Copyright 2005-2015 Giacomo Stelluti Scala & Contributors. All rights reserved. See License.md in the project root for license information.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace CommandLine
 {
@@ -12,9 +14,12 @@ namespace CommandLine
         private int min;
         private int max;
         private object @default;
+        private string env;
         private Infrastructure.LocalizableAttributeProperty helpText;
         private string metaValue;
         private Type resourceType;
+
+        private Type customConverter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandLine.BaseAttribute"/> class.
@@ -26,6 +31,7 @@ namespace CommandLine
             helpText = new Infrastructure.LocalizableAttributeProperty(nameof(HelpText));
             metaValue = string.Empty;
             resourceType = null;
+            customConverter = null;
         }
 
         /// <summary>
@@ -84,6 +90,35 @@ namespace CommandLine
             set
             {
                 @default = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets mapped property env value.
+        /// </summary>
+        public string Env
+        {
+            get { return env; }
+            set
+            {
+                env = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets custom converter value. (Should be a class that implements ICustomConverter)
+        /// This can be used to manually convert the string values passed as arguments to any desired object.
+        /// </summary>
+        public Type CustomConverter
+        {
+            get { return customConverter; }
+            set
+            {
+                if (!typeof(ICustomConverter).IsAssignableFrom(value))
+                {
+                    throw new ArgumentException("CustomConverter needs to implement ICustomConverter");
+                }
+                customConverter = value;
             }
         }
 

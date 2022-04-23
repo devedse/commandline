@@ -15,7 +15,7 @@ namespace CommandLine.Core
             MapValues(
                 IEnumerable<SpecificationProperty> propertyTuples,
                 IEnumerable<KeyValuePair<string, IEnumerable<string>>> options,
-                Func<IEnumerable<string>, Type, bool, Maybe<object>> converter,
+                Func<IEnumerable<string>, Type, bool, Maybe<object>> defaultConverter,
                 StringComparer comparer)
         {
             var sequencesAndErrors = propertyTuples
@@ -24,24 +24,59 @@ namespace CommandLine.Core
                     {
                         var matched = options.FirstOrDefault(s =>
                             s.Key.MatchName(((OptionSpecification)pt.Specification).ShortName, ((OptionSpecification)pt.Specification).LongName, comparer)).ToMaybe();
-                        return matched.IsJust()
-                            ? (
-                                from sequence in matched
-                                from converted in
-                                    converter(
-                                        sequence.Value,
-                                        pt.Property.PropertyType,
-                                        pt.Specification.TargetType != TargetType.Sequence)
-                                select Tuple.Create(
-                                    pt.WithValue(Maybe.Just(converted)), Maybe.Nothing<Error>())
-                               )
-                                .GetValueOrDefault(
-                                    Tuple.Create<SpecificationProperty, Maybe<Error>>(
-                                        pt,
-                                        Maybe.Just<Error>(
-                                            new BadFormatConversionError(
-                                                ((OptionSpecification)pt.Specification).FromOptionSpecification()))))
-                            : Tuple.Create(pt, Maybe.Nothing<Error>());
+                        var env = ((OptionSpecification)pt.Specification).Env;
+                        string envValue;
+
+                        var converter = defaultConverter;
+
+                        var customConverterType = ((OptionSpecification)pt.Specification).CustomConverter;
+                        if (customConverterType != null)
+                        {
+                            ICustomConverter c = Activator.CreateInstance(customConverterType) as ICustomConverter;
+                            converter = c.Convert;
+                        }
+
+                        if (matched.IsJust())
+                        {
+                            var retval =
+                                (from sequence in matched
+                                 from converted in
+                                 converter(
+                                     sequence.Value,
+                                     pt.Property.PropertyType,
+                                     pt.Specification.TargetType != TargetType.Sequence)
+                                 select Tuple.Create(
+                                 pt.WithValue(Maybe.Just(converted)), Maybe.Nothing<Error>())
+                                                       )
+                                                        .GetValueOrDefault(
+                                                            Tuple.Create<SpecificationProperty, Maybe<Error>>(
+                                                                pt,
+                                                                Maybe.Just<Error>(
+                                                                    new BadFormatConversionError(
+                                                                        ((OptionSpecification)pt.Specification).FromOptionSpecification()))));
+                            return retval;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(env) && !string.IsNullOrWhiteSpace(envValue = Environment.GetEnvironmentVariable(env)))
+                        {
+                            var converted =
+                                converter(new List<string>() { envValue },
+                                    pt.Property.PropertyType,
+                                    pt.Specification.TargetType != TargetType.Sequence);
+
+                            var convertedValue = converted.GetValueOrDefault(Tuple.Create<SpecificationProperty, Maybe<Error>>(
+                                                                pt,
+                                                                Maybe.Just<Error>(
+                                                                    new BadFormatConversionError(
+                                                                        ((OptionSpecification)pt.Specification).FromOptionSpecification()))));
+                            var ptWithValue = pt.WithValue(Maybe.Just(convertedValue));
+                            var retval = Tuple.Create(ptWithValue, Maybe.Nothing<Error>());
+
+                            return retval;
+                        }
+                        else
+                        {
+                            return Tuple.Create(pt, Maybe.Nothing<Error>());
+                        }
                     }
                 ).Memoize();
             return Result.Succeed(

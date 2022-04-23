@@ -1,13 +1,13 @@
 ﻿// Copyright 2005-2015 Giacomo Stelluti Scala & Contributors. All rights reserved. See License.md in the project root for license information.
 
+using CommandLine.Tests.Fakes;
+using CommandLine.Text;
+using FluentAssertions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
-using FluentAssertions;
-using CommandLine.Text;
-using CommandLine.Tests.Fakes;
 
 namespace CommandLine.Tests.Unit
 {
@@ -114,12 +114,12 @@ namespace CommandLine.Tests.Unit
         {
             // Fixture setup
             var expectedOptions = new Simple_Options_With_Values
-                                  {
-                                      StringValue = "astring",
-                                      LongValue = 20L,
-                                      StringSequence = new[] { "--aaa", "-b", "--ccc" },
-                                      IntValue = 30
-                                  };
+            {
+                StringValue = "astring",
+                LongValue = 20L,
+                StringSequence = new[] { "--aaa", "-b", "--ccc" },
+                IntValue = 30
+            };
             var sut = new Parser(with => with.EnableDashDash = true);
 
             // Exercize system
@@ -129,6 +129,175 @@ namespace CommandLine.Tests.Unit
 
             // Verify outcome
             ((Parsed<Simple_Options_With_Values>)result).Value.Should().BeEquivalentTo(expectedOptions);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_enviroment_variables()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Env
+            {
+                StringValue = "astring",
+                LongValue = 20L,
+                IntValue = 2,
+                BoolValueFullFalse = false,
+                BoolValueFullTrue = true,
+                BoolValueShortTrue = true,
+                BoolValueShortFalse = false,
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "astring");
+            Environment.SetEnvironmentVariable("LongValue", "20");
+            Environment.SetEnvironmentVariable("IntValue", null);
+            Environment.SetEnvironmentVariable("BoolValueFullFalse", "false");
+            Environment.SetEnvironmentVariable("BoolValueFullTrue", "true");
+            Environment.SetEnvironmentVariable("BoolValueShortTrue", "1");
+            Environment.SetEnvironmentVariable("BoolValueShortFalse", "0");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Env>(
+                    new string[0]);
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Env>)result).Value.Should().BeEquivalentTo(expectedOptions);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_required_enviroment_variables()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Required_Env
+            {
+                StringValue = "astring",
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "astring");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Required_Env>(
+                    new string[0]);
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Required_Env>)result).Value.Should().BeEquivalentTo(expectedOptions);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_required_enviroment_variables_Which_Is_Passed_As_Argument()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Required_Env
+            {
+                StringValue = "astring",
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Required_Env>(
+                    new string[] { "--stringvalue", "astring" });
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Required_Env>)result).Value.Should().BeEquivalentTo(expectedOptions);
+            // Teardown
+        }
+
+        [Fact]
+        public void Omitting_required_option_gererates_MissingRequiredOptionError()
+        {
+            // Fixture setup
+            var expectedResult = new[] { new MissingRequiredOptionError(new NameInfo("s", "stringvalue")) };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system 
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Required_Env>(
+                    new string[] { "", "" });
+
+            // Verify outcome
+            ((NotParsed<Simple_Options_With_Required_Env>)result).Errors.Should().BeEquivalentTo(expectedResult);
+        }
+
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_From_EnvironmentVariable()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Custom_Converter
+            {
+                StringValue = new TheCustomClass("astring"),
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "astring");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[0]);
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Data.Should().BeEquivalentTo(expectedOptions.StringValue.Data);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_From_Flags()
+        {
+            // Fixture setup
+            var expectedOptions = new Simple_Options_With_Custom_Converter
+            {
+                StringValue = new TheCustomClass("astring"),
+            };
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[] { "--stringvalue", "astring" });
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Data.Should().BeEquivalentTo(expectedOptions.StringValue.Data);
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_AsNull()
+        {
+            // Fixture setup
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[0]);
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Should().BeNull();
+            // Teardown
+        }
+
+        [Fact]
+        public void Parse_spec_with_CustomConverter_AsNull_For_Invalid_Value()
+        {
+            // Fixture setup
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            Environment.SetEnvironmentVariable("StringValue", "");
+            var result =
+                sut.ParseArguments<Simple_Options_With_Custom_Converter>(
+                    new string[] { "--stringvalue", "invalidvalue" });
+
+            // Verify outcome
+            ((Parsed<Simple_Options_With_Custom_Converter>)result).Value.StringValue.Should().BeNull();
             // Teardown
         }
 
@@ -176,7 +345,7 @@ namespace CommandLine.Tests.Unit
         public void Parse_options_with_single_dash()
         {
             // Fixture setup
-            var args = new[] {"-"};
+            var args = new[] { "-" };
             var expectedOptions = new Options_With_Switches();
             var sut = new Parser();
 
@@ -193,15 +362,15 @@ namespace CommandLine.Tests.Unit
         {
             // Fixture setup
             var expectedOptions = new Clone_Verb
-                                  {
-                                      Quiet = true,
-                                      Urls =
+            {
+                Quiet = true,
+                Urls =
                                           new[]
                                           {
                                               "http://gsscoder.github.com/",
                                               "http://yes-to-nooo.github.com/"
                                           }
-                                  };
+            };
             var sut = new Parser();
 
             // Exercize system
@@ -261,15 +430,15 @@ namespace CommandLine.Tests.Unit
         {
             // Fixture setup
             var expectedOptions = new Clone_Verb
-                                  {
-                                      Quiet = true,
-                                      Urls =
+            {
+                Quiet = true,
+                Urls =
                                           new[]
                                           {
                                               "http://gsscoder.github.com/",
                                               "http://yes-to-nooo.github.com/"
                                           }
-                                  };
+            };
             var sut = new Parser();
 
             // Exercize system
@@ -360,7 +529,7 @@ namespace CommandLine.Tests.Unit
             // Verify outcome
             result.Length.Should().BeGreaterThan(0);
             var lines = result.ToNotEmptyLines().TrimStringArray();
-            lines.Should().HaveCount(x => x == 1);			
+            lines.Should().HaveCount(x => x == 1);
             lines[0].Should().Be(HeadingInfo.Default.ToString());
             // Teardown
         }
@@ -390,7 +559,7 @@ namespace CommandLine.Tests.Unit
             lines[8].Should().BeEquivalentTo("version    Display version information.");
             // Teardown
         }
-       
+
         [Fact]
         public void Help_screen_in_default_verb_scenario()
         {
@@ -399,9 +568,9 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercise system
-            sut.ParseArguments<Add_Verb_As_Default, Commit_Verb, Clone_Verb>(new string[] {"--help" });
+            sut.ParseArguments<Add_Verb_As_Default, Commit_Verb, Clone_Verb>(new string[] { "--help" });
             var result = help.ToString();
-         
+
             // Verify outcome
             result.Length.Should().BeGreaterThan(0);
             var lines = result.ToNotEmptyLines().TrimStringArray();
@@ -412,7 +581,7 @@ namespace CommandLine.Tests.Unit
             lines[4].Should().BeEquivalentTo("clone      Clone a repository into a new directory.");
             lines[5].Should().BeEquivalentTo("help       Display more information on a specific command.");
             lines[6].Should().BeEquivalentTo("version    Display version information.");
-            
+
         }
         [Fact]
         public void Double_dash_help_dispalys_verbs_index_in_verbs_scenario()
@@ -539,7 +708,7 @@ namespace CommandLine.Tests.Unit
             // Teardown
         }
 
-         [Fact]
+        [Fact]
         public void Properly_formatted_help_screen_is_displayed_when_there_is_a_hidden_verb()
         {
             // Fixture setup
@@ -549,7 +718,7 @@ namespace CommandLine.Tests.Unit
             // Exercize system
             sut.ParseArguments<Secert_Verb, Add_Verb_With_Usage_Attribute>(new string[] { });
             var result = help.ToString();
-            
+
             // Verify outcome
             var lines = result.ToNotEmptyLines().TrimStringArray();
             lines[0].Should().Be(HeadingInfo.Default.ToString());
@@ -573,7 +742,7 @@ namespace CommandLine.Tests.Unit
             // Exercize system
             sut.ParseArguments<Secert_Verb, Add_Verb_With_Usage_Attribute>(new string[] { "secert", "--help" });
             var result = help.ToString();
-            
+
             // Verify outcome
             var lines = result.ToNotEmptyLines().TrimStringArray();
             lines[0].Should().Be(HeadingInfo.Default.ToString());
@@ -584,18 +753,18 @@ namespace CommandLine.Tests.Unit
 
             // Teardown
         }
-        
+
         [Fact]
         public void Parse_options_when_given_hidden_verb()
         {
             // Fixture setup
-            var expectedOptions = new Secert_Verb { Force = true, SecertOption = null};
+            var expectedOptions = new Secert_Verb { Force = true, SecertOption = null };
             var help = new StringWriter();
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
             var result = sut.ParseArguments<Secert_Verb, Add_Verb_With_Usage_Attribute>(new string[] { "secert", "--force" });
-            
+
 
             // Verify outcome
             result.Tag.Should().BeEquivalentTo(ParserResultType.Parsed);
@@ -615,7 +784,7 @@ namespace CommandLine.Tests.Unit
 
             // Exercize system
             var result = sut.ParseArguments<Secert_Verb, Add_Verb_With_Usage_Attribute>(new string[] { "secert", "--force", "--secert-option", "shhh" });
-            
+
             // Verify outcome
             result.Tag.Should().BeEquivalentTo(ParserResultType.Parsed);
             result.GetType().Should().Be<Parsed<object>>();
@@ -742,7 +911,7 @@ namespace CommandLine.Tests.Unit
 
             // Verify outcome
             ((NotParsed<Options_With_SetName_That_Ends_With_Previous_SetName>)result).Errors.Should().BeEquivalentTo(expectedResult);
-           
+
         }
 
         [Fact]
@@ -779,7 +948,7 @@ namespace CommandLine.Tests.Unit
         {
             get
             {
-                yield return new object[] { new[] { "commit", "-up" }, new Commit_Verb { Patch =  true } };
+                yield return new object[] { new[] { "commit", "-up" }, new Commit_Verb { Patch = true } };
                 yield return new object[] { new[] { "commit", "--amend", "--unknown", "valid" }, new Commit_Verb { Amend = true } };
             }
         }
@@ -820,7 +989,7 @@ namespace CommandLine.Tests.Unit
         {
             var parser = Parser.Default;
             var result = parser.ParseArguments(
-                new[] { "test", "arg", "-o", "arg" }, 
+                new[] { "test", "arg", "-o", "arg" },
                 typeof(Verb_With_Option_And_Value_Of_String_Type));
             result
                 .WithNotParsed(errors => { throw new InvalidOperationException("Must be parsed."); })
@@ -858,7 +1027,7 @@ namespace CommandLine.Tests.Unit
             // Exercize system
             sut.ParseArguments<Secert_Verb, Add_Verb_With_Usage_Attribute>(new string[] { });
             var result = help.ToString();
-            
+
             // Verify outcome
             var lines = result.ToLines().TrimStringArray();
             lines[6].Should().BeEquivalentTo("add        Add file contents to the index.");
@@ -917,10 +1086,10 @@ namespace CommandLine.Tests.Unit
         public void When_HelpWriter_is_null_it_should_not_fire_exception()
         {
             // Arrange
-            
+
             //Act
             var sut = new Parser(config => config.HelpWriter = null);
-            sut.ParseArguments<Simple_Options>(new[] {"--dummy"});
+            sut.ParseArguments<Simple_Options>(new[] { "--dummy" });
             //Assert
             sut.Settings.MaximumDisplayWidth.Should().BeGreaterThan(1);
         }
